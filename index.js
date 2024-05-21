@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const userRouter = require("./controllers/users");
 const parkingRouter = require("./controllers/parkings");
+const path = require("path");
 
 app.use(express.json());
 
