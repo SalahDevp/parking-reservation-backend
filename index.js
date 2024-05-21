@@ -5,6 +5,9 @@ const parkingRouter = require("./controllers/parkings");
 
 app.use(express.json());
 
+//server static files (images...)
+app.use("/public", express.static(path.join(__dirname, "public")));
+
 app.get("/", (req, res) => {
   res.json("Welcome to parking reservations API");
 });
