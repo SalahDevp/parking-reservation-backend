@@ -9,15 +9,12 @@ function initDataBase() {
     driver: sqlite3.Database,
   });
 }
-
+dbPromise = initDataBase();
 /**
  *
  * @returns {Promise<sqlite.Database>}
  */
 function dbFactory() {
-  if (!dbPromise) {
-    dbPromise = initDataBase();
-  }
   return dbPromise;
 }
 
