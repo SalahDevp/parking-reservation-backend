@@ -32,10 +32,11 @@ router.post("/login", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM users WHERE id = ?`;
-  const user = await db.get(sql, req.userId);
+  const user = await db.get(sql, [req.params.id]);
   if (!user) {
     return res.status(404).json({ error: "User not found" });
   }
+  delete user.password;
   res.json(user);
 });
 
@@ -43,7 +44,7 @@ router.get("/:id", async (req, res) => {
 router.get("/:id/reservations", async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM reservations WHERE userId = ?`;
-  const reservations = await db.all(sql, req.userId);
+  const reservations = await db.all(sql, req.params.id);
   res.json(reservations);
 });
 
@@ -51,7 +52,10 @@ router.get("/:id/reservations", async (req, res) => {
 router.get("/:id/reservations/:reservationId", async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM reservations WHERE userId = ? AND id = ?`;
-  const reservation = await db.get(sql, [req.userId, req.params.reservationId]);
+  const reservation = await db.get(sql, [
+    req.params.id,
+    req.params.reservationId,
+  ]);
   res.json(reservation);
 });
 
