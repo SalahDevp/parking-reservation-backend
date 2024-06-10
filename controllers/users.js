@@ -18,7 +18,10 @@ router.post("/register", async (req, res) => {
   const sql = `INSERT INTO users (firstName, lastName, email, password, phone) VALUES (?, ?, ?, ?, ?)`;
   try {
     await db.run(sql, [firstName, lastName, email, hashedPassword, phone]);
-    res.status(201).json({ message: "User registered successfully." });
+    const token = jwt.sign({ userId: user.id }, config.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    res.status(201).json({ token });
   } catch (err) {
     res.status(500).json({ message: "Server error: " + err.message });
   }
