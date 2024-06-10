@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const dbFactory = require("../db");
+const verifyToken = require("../middleware/authMiddleware");
 
 // Get parkings list
 router.get("/", async (req, res) => {
@@ -22,9 +23,9 @@ router.get("/:id", async (req, res) => {
 });
 
 // Reserve a parking slot
-router.post("/:id/reservations", async (req, res) => {
+router.post("/:id/reservations", verifyToken, async (req, res) => {
   const db = await dbFactory();
-  const { userId, date, entryTime, exitTime } = req.body;
+  const { date, entryTime, exitTime } = req.body;
   //check if there is available slot
 
   let sql = `SELECT count(id) count FROM reservations WHERE parkingId = ? AND date = ? AND entryTime < ? AND exitTime > ?`;
@@ -38,7 +39,7 @@ router.post("/:id/reservations", async (req, res) => {
 
   sql = `INSERT INTO reservations (userId, parkingId, date, entryTime, exitTime) VALUES (?, ?, ?, ?, ?)`;
   const { lastID } = await db.run(sql, [
-    userId,
+    req.userId,
     req.params.id,
     date,
     entryTime,

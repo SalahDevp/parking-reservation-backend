@@ -1,62 +1,100 @@
 const router = require("express").Router();
 const dbFactory = require("../db");
+const verifyToken = require("../middleware/authMiddleware");
 const jwt = require("jsonwebtoken");
 const config = require("../config");
+const bcrypt = require("bcrypt");
 
+// Registration Endpoint
 router.post("/register", async (req, res) => {
   const db = await dbFactory();
   const { firstName, lastName, email, password, phone } = req.body;
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Email and password are required." });
+  }
+  const hashedPassword = await bcrypt.hash(password, 10);
   const sql = `INSERT INTO users (firstName, lastName, email, password, phone) VALUES (?, ?, ?, ?, ?)`;
   try {
-    await db.run(sql, [firstName, lastName, email, password, phone]);
-    res.json({ message: "User registered successfully" });
+    await db.run(sql, [firstName, lastName, email, hashedPassword, phone]);
+    res.status(201).json({ message: "User registered successfully." });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(500).json({ message: "Server error: " + err.message });
   }
 });
 
+// Login Endpoint
 router.post("/login", async (req, res) => {
   const db = await dbFactory();
   const { email, password } = req.body;
-  const sql = `SELECT * FROM users WHERE email = ? AND password = ?`;
+  const sql = `SELECT * FROM users WHERE email = ?`;
   try {
-    const user = await db.get(sql, [email, password]);
-    const token = jwt.sign({ userId: user.id }, config.JWT_SECRET);
-    res.json({ userId: user.id, token });
+    const user = await db.get(sql, [email]);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "Authentication failed, user not found." });
+    }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res
+        .status(401)
+        .json({ message: "Authentication failed, incorrect password." });
+    }
+    const token = jwt.sign({ userId: user.id }, config.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    res.status(200).json({ token });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(500).json({ message: "Server error: " + err.message });
   }
 });
 
-//Get user details
-router.get("/:id", async (req, res) => {
+// User Profile Endpoint
+router.get("/profile", verifyToken, async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM users WHERE id = ?`;
-  const user = await db.get(sql, [req.params.id]);
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
+  try {
+    const user = await db.get(sql, [req.userId]);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    delete user.password;
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error: " + err.message });
   }
-  delete user.password;
-  res.json(user);
 });
 
-//Get user reservations
-router.get("/:id/reservations", async (req, res) => {
+// User Reservations List Endpoint
+router.get("/reservations", verifyToken, async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM reservations WHERE userId = ?`;
-  const reservations = await db.all(sql, req.params.id);
-  res.json(reservations);
+  try {
+    const reservations = await db.all(sql, req.userId);
+    res.json(reservations);
+  } catch (err) {
+    res.status(500).json({ message: "Server error: " + err.message });
+  }
 });
 
-//Get user reservation details
-router.get("/:id/reservations/:reservationId", async (req, res) => {
+// Specific Reservation Details Endpoint
+router.get("/reservations/:reservationId", verifyToken, async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM reservations WHERE userId = ? AND id = ?`;
-  const reservation = await db.get(sql, [
-    req.params.id,
-    req.params.reservationId,
-  ]);
-  res.json(reservation);
+  try {
+    const reservation = await db.get(sql, [
+      req.userId,
+      req.params.reservationId,
+    ]);
+    if (!reservation) {
+      return res.status(404).json({ message: "Reservation not found." });
+    }
+    res.json(reservation);
+  } catch (err) {
+    res.status(500).json({ message: "Server error: " + err.message });
+  }
 });
 
 module.exports = router;
