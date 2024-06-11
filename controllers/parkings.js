@@ -1,5 +1,7 @@
 const router = require("express").Router();
 const dbFactory = require("../db");
+const verifyToken = require("../middleware/authMiddleware");
+const schedule = require("node-schedule");
 
 // Get parkings list
 router.get("/", async (req, res) => {
@@ -22,9 +24,10 @@ router.get("/:id", async (req, res) => {
 });
 
 // Reserve a parking slot
-router.post("/:id/reservations", async (req, res) => {
+router.post("/:id/reservations", verifyToken, async (req, res) => {
   const db = await dbFactory();
-  const { userId, date, entryTime, exitTime } = req.body;
+  const { date, entryTime, exitTime } = req.body;
+  const reservationDateTime = new Date(`${date}T${entryTime}`);
   //check if there is available slot
 
   let sql = `SELECT count(id) count FROM reservations WHERE parkingId = ? AND date = ? AND entryTime < ? AND exitTime > ?`;
@@ -38,12 +41,17 @@ router.post("/:id/reservations", async (req, res) => {
 
   sql = `INSERT INTO reservations (userId, parkingId, date, entryTime, exitTime) VALUES (?, ?, ?, ?, ?)`;
   const { lastID } = await db.run(sql, [
-    userId,
+    req.userId,
     req.params.id,
     date,
     entryTime,
     exitTime,
   ]);
+  // Send notification 10 minutes before reservation start
+  const jobDate = new Date(reservationDateTime.getTime() - 10 * 60 * 1000);
+  schedule.scheduleJob(jobDate, () => {
+    //TODO: send notif
+  });
   res.json({ reservationId: lastID });
 });
 
