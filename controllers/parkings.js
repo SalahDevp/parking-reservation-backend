@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const dbFactory = require("../db");
 const verifyToken = require("../middleware/authMiddleware");
+const schedule = require("node-schedule");
 
 // Get parkings list
 router.get("/", async (req, res) => {
@@ -26,6 +27,7 @@ router.get("/:id", async (req, res) => {
 router.post("/:id/reservations", verifyToken, async (req, res) => {
   const db = await dbFactory();
   const { date, entryTime, exitTime } = req.body;
+  const reservationDateTime = new Date(`${date}T${entryTime}`);
   //check if there is available slot
 
   let sql = `SELECT count(id) count FROM reservations WHERE parkingId = ? AND date = ? AND entryTime < ? AND exitTime > ?`;
@@ -45,6 +47,11 @@ router.post("/:id/reservations", verifyToken, async (req, res) => {
     entryTime,
     exitTime,
   ]);
+  // Send notification 10 minutes before reservation start
+  const jobDate = new Date(reservationDateTime.getTime() - 10 * 60 * 1000);
+  schedule.scheduleJob(jobDate, () => {
+    //TODO: send notif
+  });
   res.json({ reservationId: lastID });
 });
 
