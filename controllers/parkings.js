@@ -2,6 +2,7 @@ const router = require("express").Router();
 const dbFactory = require("../db");
 const verifyToken = require("../middleware/authMiddleware");
 const schedule = require("node-schedule");
+const { sendPushNotification } = require("../libs/firebase");
 
 // Get parkings list
 router.get("/", async (req, res) => {
@@ -47,10 +48,20 @@ router.post("/:id/reservations", verifyToken, async (req, res) => {
     entryTime,
     exitTime,
   ]);
+
+  //get user
+  sql = `SELECT * FROM users WHERE id=?`;
+  const user = await db.get(sql, [req.userId]);
   // Send notification 10 minutes before reservation start
-  const jobDate = new Date(reservationDateTime.getTime() - 10 * 60 * 1000);
+  const jobDate = new Date(
+    Math.max(reservationDateTime.getTime() - 10 * 60 * 1000, Date.now() + 2000)
+  );
   schedule.scheduleJob(jobDate, () => {
-    //TODO: send notif
+    sendPushNotification(
+      user.firebaseToken,
+      "Reservation",
+      "only 10 minutes remains for your reservation"
+    );
   });
   res.json({ reservationId: lastID });
 });
