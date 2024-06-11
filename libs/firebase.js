@@ -28,10 +28,10 @@ function sendPushNotification(token, title, body) {
     });
 }
 
-sendPushNotification(
-  "eh85PyxfQUGePhymJqTSTW:APA91bG-bdjkFAPVjSrPpPeZLh062OtKrhi2BBt_bzTB3lpUNVt-LanYJCf9O_d6bV_VPuq_734-2BSzpYczUnlSzQ0qJ2Sodk0VfnrscVGFQsGowRD7_204kxYGTEajSo2gEX9kT4yt",
+/*sendPushNotification(
+  "dbF_MAg_T2a_Naodi4hBjE:APA91bHldn5d3rZlAO3nqtrwNeivEkRKdYkueFF5k8pNh2athLTgisBubjA_R_lv0dLWK4BHvlb80o2BFwo14P9iZUILH5MFTIIvId0uzXV_fqlkKq64SIplpHtXd53fe_ppfG_KPahZ",
   "Test title",
   "Test body"
-);
+);*/
 
 module.exports = { sendPushNotification, firebase };

@@ -17,8 +17,14 @@ router.post("/register", async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   const sql = `INSERT INTO users (firstName, lastName, email, password, phone) VALUES (?, ?, ?, ?, ?)`;
   try {
-    await db.run(sql, [firstName, lastName, email, hashedPassword, phone]);
-    const token = jwt.sign({ userId: user.id }, config.JWT_SECRET, {
+    const { lastID } = await db.run(sql, [
+      firstName,
+      lastName,
+      email,
+      hashedPassword,
+      phone,
+    ]);
+    const token = jwt.sign({ userId: lastID }, config.JWT_SECRET, {
       expiresIn: "7d",
     });
     res.status(201).json({ token });
