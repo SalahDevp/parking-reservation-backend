@@ -70,7 +70,20 @@ router.get("/profile", verifyToken, async (req, res) => {
   }
 });
 
-// User Reservations List Endpoint
+router.post("/:id/firebase-token", async (req, res) => {
+  const db = await dbFactory();
+  const { token } = req.body;
+  const sql = `UPDATE users SET firebaseToken = ? WHERE id = ?`;
+  try {
+    await db.run(sql, [token, req.params.id]);
+    res.json({ message: "Firebase token saved successfully" });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+//Get user reservations
+
 router.get("/reservations", verifyToken, async (req, res) => {
   const db = await dbFactory();
   const sql = `SELECT * FROM reservations WHERE userId = ?`;

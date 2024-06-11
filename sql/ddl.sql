@@ -18,6 +18,7 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     firstName TEXT,
     lastName TEXT,
+    firebaseToken TEXT,
     phone TEXT
 );
 
